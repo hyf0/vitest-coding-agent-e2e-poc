@@ -23,6 +23,8 @@ test('claude-code: creates HTTP server', async () => {
     env: {
       ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ?? '',
       CLAUDE_CODE_OAUTH_TOKEN: process.env.CLAUDE_CODE_OAUTH_TOKEN ?? '',
+      // Allows --dangerously-skip-permissions to work as root in Docker
+      // See: https://github.com/anthropics/claude-code/issues/9184
       IS_SANDBOX: '1',
     },
   })
