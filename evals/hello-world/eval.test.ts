@@ -1,4 +1,4 @@
-import { test, expect } from 'vitest'
+import { test } from 'vitest'
 import { createEvalContainer } from '../../helpers/docker'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
@@ -12,11 +12,11 @@ test('agent creates hello.txt with hello world', async () => {
 
   try {
     // Simulate agent — replace with real agent command:
-    // await container.exec('claude -p "create a file hello.txt containing hello world"')
-    await container.exec('echo "hello world" > /app/hello.txt')
+    // await container.run('claude -p "create a file hello.txt containing hello world"')
+    await container.run('echo "hello world" > /app/hello.txt')
 
     // Install vitest in container
-    await container.exec('npm install -g vitest')
+    await container.run('npm install -g vitest')
 
     // Copy verify test into container
     await container.copyFileIn(
@@ -25,8 +25,7 @@ test('agent creates hello.txt with hello world', async () => {
     )
 
     // Run verification
-    const result = await container.exec('vitest run /app/verify.test.ts')
-    expect(result.exitCode).toBe(0)
+    await container.run('vitest run /app/verify.test.ts')
   } finally {
     await container.cleanup()
   }

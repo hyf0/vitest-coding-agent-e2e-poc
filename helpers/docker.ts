@@ -9,7 +9,7 @@ export interface ExecResult {
 }
 
 export interface EvalContainer {
-  exec(command: string): Promise<ExecResult>
+  run(command: string): Promise<ExecResult>
   copyFileIn(hostPath: string, containerPath: string): Promise<void>
   cleanup(): Promise<void>
 }
@@ -38,8 +38,14 @@ export async function createEvalContainer(options: {
   await execInContainer(container, `mkdir -p ${workdir}`, workdir)
 
   return {
-    async exec(command: string): Promise<ExecResult> {
-      return execInContainer(container, command, workdir)
+    async run(command: string): Promise<ExecResult> {
+      const result = await execInContainer(container, command, workdir)
+      if (result.exitCode !== 0) {
+        throw new Error(
+          `Command failed (exit ${result.exitCode}): ${command}\n\nstdout:\n${result.stdout}\n\nstderr:\n${result.stderr}`,
+        )
+      }
+      return result
     },
 
     async copyFileIn(hostPath: string, containerPath: string): Promise<void> {

@@ -1,4 +1,4 @@
-import { test, expect } from 'vitest'
+import { test } from 'vitest'
 import { createEvalContainer, type EvalContainer } from '../../helpers/docker'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
@@ -9,13 +9,12 @@ const prompt =
   'create an HTTP server on port 3000 that responds with {"hello":"world"} on GET /'
 
 async function runVerify(container: EvalContainer): Promise<void> {
-  await container.exec('npm install -g vitest')
+  await container.run('npm install -g vitest')
   await container.copyFileIn(
     resolve(__dirname, 'verify.test.ts'),
     '/app/verify.test.ts',
   )
-  const result = await container.exec('vitest run /app/verify.test.ts')
-  expect(result.exitCode).toBe(0)
+  await container.run('vitest run /app/verify.test.ts')
 }
 
 test('claude-code: creates HTTP server', async () => {
@@ -28,8 +27,8 @@ test('claude-code: creates HTTP server', async () => {
   })
 
   try {
-    await container.exec('npm install -g @anthropic-ai/claude-code')
-    await container.exec(
+    await container.run('npm install -g @anthropic-ai/claude-code')
+    await container.run(
       `claude -p "${prompt}" --dangerously-skip-permissions`,
     )
     await runVerify(container)
@@ -45,8 +44,8 @@ test('codex: creates HTTP server', async () => {
   })
 
   try {
-    await container.exec('npm install -g @openai/codex')
-    await container.exec(`codex exec "${prompt}" --full-auto`)
+    await container.run('npm install -g @openai/codex')
+    await container.run(`codex exec "${prompt}" --full-auto`)
     await runVerify(container)
   } finally {
     await container.cleanup()
