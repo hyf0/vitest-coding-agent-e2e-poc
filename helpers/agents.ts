@@ -1,4 +1,4 @@
-type ClaudeModel = 'claude-opus-4-6' | 'claude-sonnet-4-6'
+type ClaudeModel = 'claude-opus-4-6' | 'claude-opus-4-6[1m]' | 'claude-sonnet-4-6' | 'claude-sonnet-4-6[1m]'
 type ClaudeEffort = 'low' | 'medium' | 'high' | 'max'
 
 type CodexModel = 'gpt-5.4' | 'gpt-5.4-mini' | 'gpt-5.3-codex' | 'gpt-5.3-codex-spark' | 'gpt-5.2'
@@ -15,8 +15,10 @@ interface CodexOptions {
 }
 
 const claudePresets = {
-  'opus-max': { model: 'claude-opus-4-6', effort: 'max' },
-  'sonnet-high': { model: 'claude-sonnet-4-6', effort: 'high' },
+  'opus4.6-max': { model: 'claude-opus-4-6', effort: 'max' },
+  'opus4.6[1m]-max': { model: 'claude-opus-4-6[1m]', effort: 'max' },
+  'sonnet4.6-high': { model: 'claude-sonnet-4-6', effort: 'high' },
+  'sonnet4.6[1m]-high': { model: 'claude-sonnet-4-6[1m]', effort: 'high' },
 } as const satisfies Record<string, ClaudeOptions>
 
 const codexPresets = {
