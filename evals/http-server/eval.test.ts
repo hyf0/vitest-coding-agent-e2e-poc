@@ -45,7 +45,10 @@ test('claude-code: creates HTTP server', async () => {
 test('codex: creates HTTP server', async () => {
   const container = await createEvalContainer({
     image: 'node:24',
-    env: { OPENAI_API_KEY: process.env.OPENAI_API_KEY ?? '' },
+    env: {
+      CODEX_API_KEY: process.env.CODEX_API_KEY ?? '',
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY ?? '',
+    },
   })
 
   try {
