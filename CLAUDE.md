@@ -42,6 +42,12 @@ Minimal POC for e2e testing of coding agents (Claude Code, Codex) using Vitest +
 - Always use `test.concurrent()` or `describe.concurrent()` — each test gets its own Docker container so there's no reason to run sequentially.
 - `.env` is loaded via Vite's `loadEnv` in `vitest.config.ts` — no need for dotenv.
 
+## Eval Env Vars
+
+- `EVAL_RUNS` — number of times to run each eval. Default: `3`.
+- `MAX_CONTAINERS` — max concurrent Docker containers. Default: `5`.
+- `UPDATE_EVAL=1` — force re-run, delete existing results.
+
 ## Running
 
 ```bash
