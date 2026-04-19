@@ -34,14 +34,7 @@ export async function createEvalContainer(options: {
 
   await container.start()
 
-  // Set up non-root user and workdir
   await execInContainer(container, `mkdir -p ${workdir}`, '/')
-  await execInContainer(
-    container,
-    'useradd -m -s /bin/bash evaluser 2>/dev/null; chown -R evaluser:evaluser /app',
-    '/',
-  )
-  // Init git repo (required by some agents like Codex)
   await execInContainer(container, 'git init', workdir)
 
   return {

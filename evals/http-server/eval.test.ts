@@ -23,13 +23,14 @@ test('claude-code: creates HTTP server', async () => {
     env: {
       ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ?? '',
       CLAUDE_CODE_OAUTH_TOKEN: process.env.CLAUDE_CODE_OAUTH_TOKEN ?? '',
+      IS_SANDBOX: '1',
     },
   })
 
   try {
     await container.run('npm install -g @anthropic-ai/claude-code')
     await container.run(
-      `su evaluser -c 'claude -p "${prompt}" --dangerously-skip-permissions'`,
+      `claude -p "${prompt}" --dangerously-skip-permissions`,
     )
     await runVerify(container)
   } finally {
@@ -45,7 +46,7 @@ test('codex: creates HTTP server', async () => {
 
   try {
     await container.run('npm install -g @openai/codex')
-    await container.run(`codex exec "${prompt}" --full-auto --skip-git-repo-check`)
+    await container.run(`codex exec "${prompt}" --full-auto`)
     await runVerify(container)
   } finally {
     await container.cleanup()
