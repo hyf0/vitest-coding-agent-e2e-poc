@@ -9,7 +9,10 @@ export interface ExecResult {
 }
 
 export interface EvalContainer {
+  /** Run a command as non-root user. Throws on non-zero exit. */
   run(command: string): Promise<ExecResult>
+  /** Run a command as root (for npm install -g, etc.). Throws on non-zero exit. */
+  runAsRoot(command: string): Promise<ExecResult>
   copyFileIn(hostPath: string, containerPath: string): Promise<void>
   cleanup(): Promise<void>
 }
@@ -34,18 +37,23 @@ export async function createEvalContainer(options: {
 
   await container.start()
 
-  // Ensure workdir exists
-  await execInContainer(container, `mkdir -p ${workdir}`, workdir)
+  // Set up non-root user and workdir
+  await execInContainer(container, `mkdir -p ${workdir}`, '/')
+  await execInContainer(
+    container,
+    'useradd -m -s /bin/bash evaluser 2>/dev/null; chown -R evaluser:evaluser /app',
+    '/',
+  )
+  // Init git repo (required by some agents like Codex)
+  await execInContainer(container, 'git init', workdir)
 
   return {
     async run(command: string): Promise<ExecResult> {
-      const result = await execInContainer(container, command, workdir)
-      if (result.exitCode !== 0) {
-        throw new Error(
-          `Command failed (exit ${result.exitCode}): ${command}\n\nstdout:\n${result.stdout}\n\nstderr:\n${result.stderr}`,
-        )
-      }
-      return result
+      return runCommand(container, command, workdir, 'evaluser')
+    },
+
+    async runAsRoot(command: string): Promise<ExecResult> {
+      return runCommand(container, command, workdir)
     },
 
     async copyFileIn(hostPath: string, containerPath: string): Promise<void> {
@@ -69,16 +77,33 @@ export async function createEvalContainer(options: {
   }
 }
 
+async function runCommand(
+  container: Docker.Container,
+  command: string,
+  workdir: string,
+  user?: string,
+): Promise<ExecResult> {
+  const result = await execInContainer(container, command, workdir, user)
+  if (result.exitCode !== 0) {
+    throw new Error(
+      `Command failed (exit ${result.exitCode}): ${command}\n\nstdout:\n${result.stdout}\n\nstderr:\n${result.stderr}`,
+    )
+  }
+  return result
+}
+
 async function execInContainer(
   container: Docker.Container,
   command: string,
   workdir: string,
+  user?: string,
 ): Promise<ExecResult> {
   const exec = await container.exec({
     Cmd: ['sh', '-c', command],
     WorkingDir: workdir,
     AttachStdout: true,
     AttachStderr: true,
+    User: user,
   })
 
   const stream = await exec.start({ hijack: true, stdin: false })
