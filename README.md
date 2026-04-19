@@ -1,38 +1,43 @@
 # vitest-coding-agent-e2e-poc
 
-Minimal POC for end-to-end testing of coding agents (Claude Code, Codex, etc.) using Vitest + Docker.
+Minimal POC for end-to-end testing of coding agents (Claude Code, Codex) using Vitest + Docker.
 
 ## How it works
 
 ```
-1. Start a Docker container
-2. Run an agent command inside it (any CLI)
-3. Copy a verify test into the container (agent never sees it)
-4. Run vitest inside the container to assert the result
-5. Clean up
+1. Start a Docker container (as root — Docker is the sandbox)
+2. Install the agent CLI
+3. Run an agent command inside it
+4. Copy a verify test into the container (agent never sees it)
+5. Run vitest inside the container to assert the result
+6. Record pass/fail to results.json
+7. Clean up
 ```
 
-Each eval is a single Vitest test file on the host that orchestrates the full flow via [dockerode](https://github.com/apocas/dockerode).
+Each eval runs N times (default 3) for stability testing. Results are cached — if results exist, the eval is skipped on the next run.
 
 ## Project structure
 
 ```
 ├── helpers/
-│   └── docker.ts              # thin dockerode wrapper (exec, copyFileIn, cleanup)
+│   ├── docker.ts       # createEvalContainer + container semaphore
+│   ├── agents.ts       # ClaudeCommand / CodexCommand with presets
+│   ├── eval.ts         # runEval — handles lifecycle, runs, results, skip
+│   └── results.ts      # results.json read/write/skip/clear
 ├── evals/
-│   └── hello-world/
-│       ├── eval.test.ts       # host-side orchestrator
-│       └── verify.test.ts     # runs inside container
-├── tsconfig.json              # project references (host/container isolation)
-├── tsconfig.node.json         # host environment
-├── tsconfig.verify.json       # container environment (isolated)
-└── vitest.config.ts           # includes eval.test.ts, excludes verify.test.ts
+│   └── hello-txt/
+│       ├── eval.test.ts    # opus4.6[1m] + sonnet4.6[1m] tests
+│       ├── verify.test.ts  # runs inside container
+│       └── results.json    # generated, gitignored
+├── tsconfig.json           # project references (host/container isolation)
+├── tsconfig.node.json      # host environment
+├── tsconfig.verify.json    # container environment (isolated)
+└── vitest.config.ts
 ```
 
-- **`eval.test.ts`** runs on the host — creates a container, runs the agent, copies the verify test in, runs it
-- **`verify.test.ts`** runs inside the container — self-contained, imports only `vitest` and Node.js builtins
-
-TypeScript configs use [project references](https://www.typescriptlang.org/docs/handbook/project-references.html) to keep host and container type environments fully isolated.
+- **`eval.test.ts`** runs on the host — declares which agent/model to test
+- **`verify.test.ts`** runs inside the container — self-contained assertions
+- **`results.json`** — generated per eval, stores run history per model
 
 ## Prerequisites
 
@@ -44,21 +49,35 @@ TypeScript configs use [project references](https://www.typescriptlang.org/docs/
 ```bash
 npm install
 cp .env.example .env
-# Add your API keys to .env
+# Add your API keys to .env (see .env.example for options)
 ```
 
 ## Usage
 
 ```bash
-# Run all evals
+# Run all evals (3 runs each by default)
 npx vitest run
 
-# Watch mode
-npx vitest
+# Single run
+EVAL_RUNS=1 npx vitest run
+
+# Force re-run (ignore cached results)
+UPDATE_EVAL=1 npx vitest run
+
+# Specific eval
+npx vitest run evals/hello-txt/eval.test.ts
 
 # Typecheck
 npx tsc -b
 ```
+
+## Env vars
+
+| Variable | Default | Description |
+|---|---|---|
+| `EVAL_RUNS` | `3` | Number of times to run each eval |
+| `MAX_CONTAINERS` | `5` | Max concurrent Docker containers |
+| `UPDATE_EVAL` | - | Set to `1` to force re-run, ignoring cached results |
 
 ## Writing an eval
 
@@ -70,37 +89,35 @@ evals/my-eval/
 └── verify.test.ts     # container assertions
 ```
 
-**eval.test.ts** (host):
+**eval.test.ts**:
 ```ts
-import { test, expect } from 'vitest'
-import { createEvalContainer } from '../../helpers/docker'
-import { resolve, dirname } from 'path'
+import { test } from 'vitest'
+import { ClaudeCommand } from '../../helpers/agents'
+import { runEval } from '../../helpers/eval'
+import { dirname } from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-test('agent does the thing', async () => {
-  const container = await createEvalContainer({
-    image: 'node:20',
-    env: { ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY! },
-  })
+const claude = ClaudeCommand.fromPreset('opus4.6[1m]-max')
 
-  try {
-    await container.exec('claude -p "do the thing"')
-    await container.exec('npm install -g vitest')
-    await container.copyFileIn(
-      resolve(__dirname, 'verify.test.ts'),
-      '/app/verify.test.ts',
-    )
-    const result = await container.exec('vitest run /app/verify.test.ts')
-    expect(result.exitCode).toBe(0)
-  } finally {
-    await container.cleanup()
-  }
-})
+test.concurrent('opus4.6[1m]: my eval', () =>
+  runEval({
+    evalDir: __dirname,
+    key: claude.model,
+    env: {
+      ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ?? '',
+      CLAUDE_CODE_OAUTH_TOKEN: process.env.CLAUDE_CODE_OAUTH_TOKEN ?? '',
+      IS_SANDBOX: '1',
+    },
+    setup: 'npm install -g @anthropic-ai/claude-code',
+    command: claude.toString('do the thing'),
+    verifyTest: 'verify.test.ts',
+  }),
+)
 ```
 
-**verify.test.ts** (container):
+**verify.test.ts** (runs inside container):
 ```ts
 import { test, expect } from 'vitest'
 import { readFileSync } from 'fs'
