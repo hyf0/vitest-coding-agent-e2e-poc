@@ -21,7 +21,7 @@ async function runVerify(container: EvalContainer): Promise<void> {
   await container.run('vitest run /app/verify.test.ts')
 }
 
-test('claude-code: creates HTTP server', async () => {
+test.concurrent('claude-code: creates HTTP server', async () => {
   const container = await createEvalContainer({
     image: 'node:24',
     env: {
@@ -42,7 +42,7 @@ test('claude-code: creates HTTP server', async () => {
   }
 })
 
-test('codex: creates HTTP server', async () => {
+test.concurrent('codex: creates HTTP server', async () => {
   const container = await createEvalContainer({
     image: 'node:24',
     env: {
