@@ -9,8 +9,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const prompt =
   'create an HTTP server on port 3000 that responds with {"hello":"world"} on GET /'
 
-const claude = new ClaudeCommand()
-const codex = new CodexCommand()
+const claude = ClaudeCommand.fromPreset('opus-max')
+const codex = CodexCommand.fromPreset('gpt5.4-xhigh')
 
 async function runVerify(container: EvalContainer): Promise<void> {
   await container.run('npm install -g vitest')

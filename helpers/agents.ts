@@ -4,13 +4,37 @@ type ClaudeEffort = 'low' | 'medium' | 'high' | 'max'
 type CodexModel = 'gpt-5.4' | 'gpt-5.4-mini' | 'gpt-5.3-codex' | 'gpt-5.3-codex-spark' | 'gpt-5.2'
 type CodexReasoningEffort = 'minimal' | 'low' | 'medium' | 'high' | 'xhigh'
 
+interface ClaudeOptions {
+  model: ClaudeModel
+  effort: ClaudeEffort
+}
+
+interface CodexOptions {
+  model: CodexModel
+  reasoningEffort: CodexReasoningEffort
+}
+
+const claudePresets = {
+  'opus-max': { model: 'claude-opus-4-6', effort: 'max' },
+  'sonnet-high': { model: 'claude-sonnet-4-6', effort: 'high' },
+} as const satisfies Record<string, ClaudeOptions>
+
+const codexPresets = {
+  'gpt5.4-xhigh': { model: 'gpt-5.4', reasoningEffort: 'xhigh' },
+  'gpt5.4-mini-high': { model: 'gpt-5.4-mini', reasoningEffort: 'high' },
+} as const satisfies Record<string, CodexOptions>
+
 export class ClaudeCommand {
   private model: ClaudeModel
   private effort: ClaudeEffort
 
-  constructor(options?: { model?: ClaudeModel; effort?: ClaudeEffort }) {
-    this.model = options?.model ?? 'claude-opus-4-6'
-    this.effort = options?.effort ?? 'max'
+  constructor(options: ClaudeOptions) {
+    this.model = options.model
+    this.effort = options.effort
+  }
+
+  static fromPreset(name: keyof typeof claudePresets): ClaudeCommand {
+    return new ClaudeCommand(claudePresets[name])
   }
 
   toString(prompt: string): string {
@@ -22,9 +46,13 @@ export class CodexCommand {
   private model: CodexModel
   private reasoningEffort: CodexReasoningEffort
 
-  constructor(options?: { model?: CodexModel; reasoningEffort?: CodexReasoningEffort }) {
-    this.model = options?.model ?? 'gpt-5.4'
-    this.reasoningEffort = options?.reasoningEffort ?? 'xhigh'
+  constructor(options: CodexOptions) {
+    this.model = options.model
+    this.reasoningEffort = options.reasoningEffort
+  }
+
+  static fromPreset(name: keyof typeof codexPresets): CodexCommand {
+    return new CodexCommand(codexPresets[name])
   }
 
   toString(prompt: string): string {
