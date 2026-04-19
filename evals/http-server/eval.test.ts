@@ -1,5 +1,6 @@
 import { test } from 'vitest'
 import { createEvalContainer, type EvalContainer } from '../../helpers/docker'
+import { ClaudeCommand, CodexCommand } from '../../helpers/agents'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
@@ -7,6 +8,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const prompt =
   'create an HTTP server on port 3000 that responds with {"hello":"world"} on GET /'
+
+const claude = new ClaudeCommand()
+const codex = new CodexCommand()
 
 async function runVerify(container: EvalContainer): Promise<void> {
   await container.run('npm install -g vitest')
@@ -31,9 +35,7 @@ test('claude-code: creates HTTP server', async () => {
 
   try {
     await container.run('npm install -g @anthropic-ai/claude-code')
-    await container.run(
-      `claude -p "${prompt}" --dangerously-skip-permissions`,
-    )
+    await container.run(claude.toString(prompt))
     await runVerify(container)
   } finally {
     await container.cleanup()
@@ -48,7 +50,7 @@ test('codex: creates HTTP server', async () => {
 
   try {
     await container.run('npm install -g @openai/codex')
-    await container.run(`codex exec "${prompt}" --full-auto`)
+    await container.run(codex.toString(prompt))
     await runVerify(container)
   } finally {
     await container.cleanup()
