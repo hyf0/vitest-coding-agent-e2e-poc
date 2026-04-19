@@ -6,8 +6,7 @@ import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-const prompt =
-  'create an HTTP server on port 3000 that responds with {"hello":"world"} on GET /'
+const prompt = 'create a file called hello.txt containing hello world'
 
 const claudeEnv = {
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ?? '',
@@ -20,7 +19,7 @@ const claudeEnv = {
 const opus = ClaudeCommand.fromPreset('opus4.6[1m]-max')
 const sonnet = ClaudeCommand.fromPreset('sonnet4.6[1m]-high')
 
-test.concurrent('opus4.6[1m]: creates HTTP server', () =>
+test.concurrent('opus4.6[1m]: creates hello.txt', () =>
   runEval({
     evalDir: __dirname,
     key: opus.model,
@@ -31,7 +30,7 @@ test.concurrent('opus4.6[1m]: creates HTTP server', () =>
   }),
 )
 
-test.concurrent('sonnet4.6[1m]: creates HTTP server', () =>
+test.concurrent('sonnet4.6[1m]: creates hello.txt', () =>
   runEval({
     evalDir: __dirname,
     key: sonnet.model,
