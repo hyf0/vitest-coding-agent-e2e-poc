@@ -2,6 +2,25 @@ import Docker from 'dockerode'
 
 const docker = new Docker()
 
+const MAX_CONTAINERS = Number(process.env.MAX_CONTAINERS ?? 5)
+let activeContainers = 0
+const waitQueue: (() => void)[] = []
+
+async function acquireSlot(): Promise<void> {
+  if (activeContainers < MAX_CONTAINERS) {
+    activeContainers++
+    return
+  }
+  await new Promise<void>((resolve) => waitQueue.push(resolve))
+  activeContainers++
+}
+
+function releaseSlot(): void {
+  activeContainers--
+  const next = waitQueue.shift()
+  if (next) next()
+}
+
 export interface ExecResult {
   stdout: string
   stderr: string
@@ -23,6 +42,8 @@ export async function createEvalContainer(options: {
   const envArray = options.env
     ? Object.entries(options.env).map(([k, v]) => `${k}=${v}`)
     : []
+
+  await acquireSlot()
 
   const container = await docker.createContainer({
     Image: options.image,
@@ -59,6 +80,7 @@ export async function createEvalContainer(options: {
         // container may already be stopped
       }
       await container.remove({ force: true })
+      releaseSlot()
     },
   }
 }
