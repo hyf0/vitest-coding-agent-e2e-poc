@@ -9,7 +9,7 @@ const prompt =
   'create an HTTP server on port 3000 that responds with {"hello":"world"} on GET /'
 
 async function runVerify(container: EvalContainer): Promise<void> {
-  await container.runAsRoot('npm install -g vitest')
+  await container.run('npm install -g vitest')
   await container.copyFileIn(
     resolve(__dirname, 'verify.test.ts'),
     '/app/verify.test.ts',
@@ -27,9 +27,9 @@ test('claude-code: creates HTTP server', async () => {
   })
 
   try {
-    await container.runAsRoot('npm install -g @anthropic-ai/claude-code')
+    await container.run('npm install -g @anthropic-ai/claude-code')
     await container.run(
-      `claude -p "${prompt}" --dangerously-skip-permissions`,
+      `su evaluser -c 'claude -p "${prompt}" --dangerously-skip-permissions'`,
     )
     await runVerify(container)
   } finally {
@@ -44,7 +44,7 @@ test('codex: creates HTTP server', async () => {
   })
 
   try {
-    await container.runAsRoot('npm install -g @openai/codex')
+    await container.run('npm install -g @openai/codex')
     await container.run(`codex exec "${prompt}" --full-auto --skip-git-repo-check`)
     await runVerify(container)
   } finally {

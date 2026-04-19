@@ -9,10 +9,7 @@ export interface ExecResult {
 }
 
 export interface EvalContainer {
-  /** Run a command as non-root user. Throws on non-zero exit. */
   run(command: string): Promise<ExecResult>
-  /** Run a command as root (for npm install -g, etc.). Throws on non-zero exit. */
-  runAsRoot(command: string): Promise<ExecResult>
   copyFileIn(hostPath: string, containerPath: string): Promise<void>
   cleanup(): Promise<void>
 }
@@ -49,10 +46,6 @@ export async function createEvalContainer(options: {
 
   return {
     async run(command: string): Promise<ExecResult> {
-      return runCommand(container, command, workdir, 'evaluser')
-    },
-
-    async runAsRoot(command: string): Promise<ExecResult> {
       return runCommand(container, command, workdir)
     },
 

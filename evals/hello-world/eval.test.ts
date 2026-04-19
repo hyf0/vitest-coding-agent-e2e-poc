@@ -16,7 +16,7 @@ test('agent creates hello.txt with hello world', async () => {
     await container.run('echo "hello world" > /app/hello.txt')
 
     // Install vitest in container
-    await container.runAsRoot('npm install -g vitest')
+    await container.run('npm install -g vitest')
 
     // Copy verify test into container
     await container.copyFileIn(
