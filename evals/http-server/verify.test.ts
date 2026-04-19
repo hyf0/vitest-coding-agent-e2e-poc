@@ -27,7 +27,10 @@ test('server responds with { hello: world }', async () => {
     const res = execSync('curl -s http://localhost:3000').toString()
     expect(JSON.parse(res)).toEqual({ hello: 'world' })
   } finally {
-    // Cleanup server process
-    process.kill(-server.pid!)
+    try {
+      process.kill(-server.pid!)
+    } catch {
+      // Process may have already exited
+    }
   }
 })
