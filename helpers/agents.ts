@@ -27,8 +27,8 @@ const codexPresets = {
 } as const satisfies Record<string, CodexOptions>
 
 export class ClaudeCommand {
-  private model: ClaudeModel
-  private effort: ClaudeEffort
+  readonly model: ClaudeModel
+  private readonly effort: ClaudeEffort
 
   constructor(options: ClaudeOptions) {
     this.model = options.model
@@ -45,8 +45,8 @@ export class ClaudeCommand {
 }
 
 export class CodexCommand {
-  private model: CodexModel
-  private reasoningEffort: CodexReasoningEffort
+  readonly model: CodexModel
+  private readonly reasoningEffort: CodexReasoningEffort
 
   constructor(options: CodexOptions) {
     this.model = options.model
