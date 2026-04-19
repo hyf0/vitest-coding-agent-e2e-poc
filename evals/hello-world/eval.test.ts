@@ -7,7 +7,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 
 test('agent creates hello.txt with hello world', async () => {
   const container = await createEvalContainer({
-    image: 'node:20',
+    image: 'node:24',
   })
 
   try {
